@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>あみだくじゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <h1>あみだくじゲーム</h1>
+
+        <div id="character-selection">
+            <p>キャラクターを選んでね！</p>
+            <img src="images/character1.png" alt="キャラクター1" id="char1" class="character-icon">
+            <img src="images/character2.png" alt="キャラクター2" id="char2" class="character-icon">
+            <img src="images/character3.png" alt="キャラクター3" id="char3" class="character-icon">
+        </div>
+
+        <div id="amidakuji-area">
+            <canvas id="amidakujiCanvas"></canvas>
+            <div id="fireworks-container">
+                <img src="images/fireworks.png" alt="花火" id="fireworks" class="firework-animation">
+            </div>
+        </div>
+
+        <div id="result-area" style="display: none;">
+            <img src="" alt="結果" id="result-image">
+            <p id="result-message"></p>
+            <button id="reset-button">もう一度遊ぶ</button>
+        </div>
+    </div>
+
+    <audio id="bgm" src="sounds/bgm.mp3" loop></audio>
+
+    <script src="script.js"></script>
+</body>
+</html>
