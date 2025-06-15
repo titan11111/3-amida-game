@@ -19,10 +19,10 @@ const ctx = DOM.amidakujiCanvas.getContext('2d');
 
 // ==== 音声 ====
 const sounds = {
-    click: new Audio('sounds/click.mp3'),
-    success: new Audio('sounds/success.mp3'),
-    explosion: new Audio('sounds/explosion.mp3'),
-    move: new Audio('sounds/move.mp3')
+    click: new Audio('sounds/click.mp3'), // 'sound' を 'sounds' に修正
+    success: new Audio('sounds/success.mp3'), // 'sound' を 'sounds' に修正
+    explosion: new Audio('sounds/explosion.mp3'), // 'sound' を 'sounds' に修正
+    move: new Audio('sounds/move.mp3') // 'sound' を 'sounds' に修正
 };
 
 // 音声の読み込み
@@ -40,6 +40,10 @@ const CONFIG = {
     START_Y_OFFSET: 20,
     GOAL_AREA_HEIGHT: 80,
     CHAR_SIZE: 50,
+    MOVE_SPEED_Y: 8, // キャラクターの縦移動速度を増加
+    MOVE_SPEED_X: 8, // キャラクターの横移動速度を増加
+    BOUNCE_HEIGHT: 10, // 横移動時のバウンス高さ
+    BOUNCE_DURATION: 150, // バウンス時間
 };
 
 // ==== ゲーム状態 ====
@@ -53,6 +57,9 @@ const gameState = {
     paths: [],
     results: [],
     charStartXs: [],
+    isBouncing: false,
+    bounceTimer: 0,
+    isMovingHorizontally: false, // 横移動中かどうかを示すフラグを追加
 };
 
 // ==== アセット管理 ====
@@ -113,10 +120,16 @@ function resetUI() {
     gameState.currentX = -1;
     gameState.currentY = -1;
     gameState.currentCol = -1;
+    gameState.isBouncing = false;
+    gameState.bounceTimer = 0;
+    gameState.isMovingHorizontally = false; // フラグをリセット
     
     if (gameState.animFrameId) {
         cancelAnimationFrame(gameState.animFrameId);
     }
+    
+    DOM.bgm.pause();
+    DOM.bgm.currentTime = 0;
 }
 
 // ==== あみだくじ生成 ====
@@ -205,10 +218,17 @@ function drawCharacter() {
     const img = assets.characterImages[gameState.selectedIndex];
     if (!img || !img.complete) return;
     
+    let displayY = gameState.currentY;
+    if (gameState.isBouncing) {
+        // バウンスアニメーションの計算 (sin波を使用)
+        const bounceOffset = Math.sin((gameState.bounceTimer / CONFIG.BOUNCE_DURATION) * Math.PI) * CONFIG.BOUNCE_HEIGHT;
+        displayY -= bounceOffset;
+    }
+
     ctx.drawImage(
         img,
         gameState.currentX - CONFIG.CHAR_SIZE / 2,
-        gameState.currentY - CONFIG.CHAR_SIZE / 2,
+        displayY - CONFIG.CHAR_SIZE / 2,
         CONFIG.CHAR_SIZE,
         CONFIG.CHAR_SIZE
     );
@@ -241,6 +261,12 @@ function selectCharacter(index) {
 }
 
 function animateMove() {
+    // 横移動中の場合は、縦移動をスキップ
+    if (gameState.isMovingHorizontally) {
+        gameState.animFrameId = requestAnimationFrame(animateMove);
+        return;
+    }
+
     const goalY = DOM.amidakujiCanvas.height - CONFIG.GOAL_AREA_HEIGHT;
     
     // ゴールに到達した場合
@@ -250,24 +276,53 @@ function animateMove() {
     }
     
     // 横線との交差点をチェック
-    const nextCross = gameState.paths[gameState.currentCol].find(p => 
-        CONFIG.START_Y_OFFSET + (p.row + 0.5) * CONFIG.CELL_HEIGHT > gameState.currentY
-    );
+    const nextCross = gameState.paths[gameState.currentCol].find(p => {
+        const crossY = CONFIG.START_Y_OFFSET + (p.row + 0.5) * CONFIG.CELL_HEIGHT;
+        // 現在のY座標から次のステップで横線を超えるかどうかを判定
+        return (gameState.currentY < crossY && gameState.currentY + CONFIG.MOVE_SPEED_Y >= crossY);
+    });
     
-    if (nextCross && gameState.currentY + 4 >= CONFIG.START_Y_OFFSET + (nextCross.row + 0.5) * CONFIG.CELL_HEIGHT) {
-        // 横線に到達したので移動
-        gameState.currentY = CONFIG.START_Y_OFFSET + (nextCross.row + 0.5) * CONFIG.CELL_HEIGHT;
-        
+    if (nextCross) {
+        const crossY = CONFIG.START_Y_OFFSET + (nextCross.row + 0.5) * CONFIG.CELL_HEIGHT;
+        gameState.currentY = crossY; // 横線のY座標に正確に移動
+            
         // 効果音
         sounds.move.play().catch(() => {});
         
-        // 横移動
+        // 横移動開始
+        gameState.isBouncing = true;
+        gameState.bounceTimer = 0;
+        gameState.isMovingHorizontally = true; // 横移動フラグを立てる
         const targetX = gameState.charStartXs[nextCross.toCol];
-        gameState.currentX = targetX;
-        gameState.currentCol = nextCross.toCol;
-    } else {
-        // 下に移動
-        gameState.currentY += 4;
+        const startX = gameState.currentX;
+        const startCol = gameState.currentCol;
+
+        const animateHorizontalMove = () => {
+            gameState.bounceTimer += 16; // 約60fps
+            const progress = Math.min(1, gameState.bounceTimer / CONFIG.BOUNCE_DURATION); // 1を超えないように
+            
+            // 線形補間とバウンスを組み合わせ
+            gameState.currentX = startX + (targetX - startX) * progress;
+            
+            drawAll();
+
+            if (progress === 1) { // アニメーションが完了したら
+                gameState.isBouncing = false;
+                gameState.currentX = targetX;
+                gameState.currentCol = nextCross.toCol;
+                gameState.isMovingHorizontally = false; // 横移動フラグをリセット
+                animateMove(); // 次の縦移動を開始
+            } else {
+                gameState.animFrameId = requestAnimationFrame(animateHorizontalMove);
+            }
+        };
+        animateHorizontalMove();
+        return; // 横移動中は縦移動しない
+    }
+    
+    // バウンス中でない場合のみ縦移動
+    if (!gameState.isMovingHorizontally) { // 横移動中でないことを確認
+        gameState.currentY += CONFIG.MOVE_SPEED_Y;
     }
     
     drawAll();
@@ -294,10 +349,10 @@ function showResult() {
         DOM.fireworks.classList.add('show');
         sounds.success.play().catch(() => {});
         
-        // 花火を2秒後に非表示
+        // 花火をより長く表示
         setTimeout(() => {
             DOM.fireworks.classList.remove('show');
-        }, 2000);
+        }, 3000); // 3秒に延長
         
     } else {
         DOM.resultMessage.textContent = '残念！爆弾に当たってしまった…';
@@ -318,7 +373,8 @@ DOM.resetButton.addEventListener('click', initializeGame);
 // ==== 起動処理 ====
 window.addEventListener('load', () => {
     preloadAssets();
-    setTimeout(initializeGame, 100); // 画像読み込み後に初期化
+    // setTimeout(initializeGame, 100); // 画像読み込み後に初期化 - 不要な遅延なのでコメントアウト
+    initializeGame(); // 直接呼び出す
 });
 
 window.addEventListener('resize', () => {
