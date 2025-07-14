@@ -40,6 +40,46 @@ h1 {
   letter-spacing: 1.5px;
 }
 
+/* ゲーム情報表示エリア */
+#game-info {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: linear-gradient(135deg, #4CAF50, #388E3C);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 15px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  font-weight: bold;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.info-label {
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+#current-level, #current-score, #remaining-turns {
+  font-size: 1.8em;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+#current-score {
+  color: #FFD700;
+}
+
+#remaining-turns {
+  color: #FF6B6B;
+}
+
 #character-selection p {
   font-size: 1.5em;
   margin-bottom: 25px;
@@ -159,7 +199,7 @@ h1 {
 #result-message {
   font-size: 2.2em;
   font-weight: bold;
-  margin-bottom: 25px;
+  margin-bottom: 15px;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
   letter-spacing: 1px;
 }
@@ -174,13 +214,40 @@ h1 {
   animation: textPopIn 0.6s ease-out forwards;
 }
 
+#score-change {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-bottom: 25px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  animation: scorePopIn 0.8s ease-out forwards;
+}
+
+#score-change.positive {
+  color: #388E3C;
+  background-color: rgba(76, 175, 80, 0.1);
+  border: 2px solid #4CAF50;
+}
+
+#score-change.negative {
+  color: #C62828;
+  background-color: rgba(198, 40, 40, 0.1);
+  border: 2px solid #F44336;
+}
+
+@keyframes scorePopIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
 @keyframes textPopIn {
   0% { transform: scale(0.5); opacity: 0; }
   80% { transform: scale(1.1); opacity: 1; }
   100% { transform: scale(1); }
 }
 
-#reset-button {
+#next-button, #reset-button, #restart-button {
   background: linear-gradient(45deg, #388E3C, #2E7D32);
   color: white;
   padding: 18px 35px;
@@ -190,20 +257,50 @@ h1 {
   font-weight: bold;
   cursor: pointer;
   transition: all 0.4s ease;
-  margin-top: 25px;
+  margin: 10px;
   box-shadow: 0 6px 20px rgba(56, 142, 60, 0.4);
   letter-spacing: 0.5px;
 }
 
-#reset-button:hover {
+#next-button:hover, #reset-button:hover, #restart-button:hover {
   background: linear-gradient(45deg, #2E7D32, #388E3C);
   transform: translateY(-5px) scale(1.02);
   box-shadow: 0 8px 25px rgba(56, 142, 60, 0.5);
 }
 
-#reset-button:active {
+#next-button:active, #reset-button:active, #restart-button:active {
   transform: translateY(-2px) scale(0.98);
   box-shadow: 0 3px 10px rgba(56, 142, 60, 0.3);
+}
+
+/* ゲーム終了画面 */
+#game-over-area {
+  margin-top: 40px;
+  padding: 30px;
+  background: linear-gradient(135deg, #FF9800, #F57C00);
+  border-radius: 20px;
+  color: white;
+  animation: fadeInScale 0.8s ease-out forwards;
+}
+
+#game-over-area h2 {
+  font-size: 2.5em;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+#final-score {
+  font-size: 2em;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #FFD700;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+#final-message {
+  font-size: 1.3em;
+  margin-bottom: 25px;
+  opacity: 0.9;
 }
 
 /* スマホ対応 */
@@ -215,6 +312,21 @@ h1 {
 
   h1 {
     font-size: 2.2em;
+  }
+
+  #game-info {
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 15px;
+  }
+
+  .info-item {
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  #current-level, #current-score, #remaining-turns {
+    font-size: 1.4em;
   }
 
   .character-icon {
@@ -231,7 +343,7 @@ h1 {
     font-size: 1.6em;
   }
 
-  #reset-button {
+  #next-button, #reset-button, #restart-button {
     font-size: 1.1em;
     padding: 14px 28px;
   }
@@ -243,6 +355,14 @@ h1 {
   .firework-animation {
     width: 200px;
     height: 200px;
+  }
+
+  #game-over-area h2 {
+    font-size: 2em;
+  }
+
+  #final-score {
+    font-size: 1.6em;
   }
 }
 
@@ -261,12 +381,20 @@ h1 {
     font-size: 1.3em;
   }
 
-  #reset-button {
+  #next-button, #reset-button, #restart-button {
     font-size: 0.9em;
     padding: 10px 20px;
   }
 
   #result-image {
     max-width: 120px;
+  }
+
+  #game-over-area h2 {
+    font-size: 1.8em;
+  }
+
+  #final-score {
+    font-size: 1.4em;
   }
 }
